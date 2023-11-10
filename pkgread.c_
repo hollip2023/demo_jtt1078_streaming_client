@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+    FILE *file = fopen("1078.tcpdump", "rb"); // Open the file in binary mode
+    if (file == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    unsigned char buffer[4];
+    size_t bytesRead;
+    unsigned int value;
+    int foundSequence = 0;
+	int printedNumOneLine = 0;
+
+    // Read and print the file content in hex
+    while ((bytesRead = fread(buffer, 1, sizeof(buffer), file)) > 0) {
+        for (size_t i = 0; i < bytesRead; ++i) {
+            // Check for the sequence 0x30316364 and print a newline
+            if (!foundSequence && i <= bytesRead - 4) {
+                value = (buffer[i] << 24) | (buffer[i+1] << 16) | (buffer[i+2] << 8) | buffer[i+3];
+                if (value == 0x30316364) {
+                    printf("\n");
+                    foundSequence = 1; // Prevent multiple newlines if the sequence appears more than once in a chunk
+                    printedNumOneLine = 0;
+                }
+            }
+            if(printedNumOneLine++ < 40)
+            	printf("%02X ", buffer[i]);
+            
+        }
+        foundSequence = 0; // Reset the flag for the next chunk
+    }
+
+    if (ferror(file)) {
+        perror("Error reading file");
+        fclose(file);
+        return 1;
+    }
+
+    fclose(file);
+    return 0;
+}
+
